@@ -1,7 +1,6 @@
-use research_engine::backtest::run_backtest;
+use research_engine::backtest::run_backtest_summary;
 use research_engine::data::{close_prices, load_price_bars};
 use research_engine::indicators::simple_moving_average;
-use research_engine::metrics::{max_drawdown, total_return};
 use research_engine::strategy::generate_sma_signals;
 
 fn main() {
@@ -15,14 +14,20 @@ fn main() {
 
     let signals = generate_sma_signals(&short_sma, &long_sma).expect("SMA signal generation wrong");
 
-    let equity_curve = run_backtest(&prices, &signals, 10000.0).expect("length is wrong");
+    let initial_cash = 10000.0;
 
-    let ret = total_return(&equity_curve);
-    let mdd = max_drawdown(&equity_curve);
+    let result = run_backtest_summary(&prices, &signals, initial_cash)
+        .expect("Backtest result should not be empty");
 
-    println!("Prices: {:?}", prices);
-    println!("Short_sma: {:?}, long_sma: {:?}", short_sma, long_sma);
-    println!("Signals: {:?}", signals);
-    println!("Equity Curve: {:?}", equity_curve);
-    println!("Ret: {:?}, Mdd: {:?}", ret, mdd);
+    println!("Rows loaded: {}", bars.len());
+    println!("Initial equity: {:.2}", result.initial_equity);
+    println!("Final equity: {:.2}", result.final_equity);
+    println!(
+        "Total return: {:.2}%",
+        result.total_return.unwrap_or(0.0) * 100.0
+    );
+    println!(
+        "Max drawdown: {:.2}%",
+        result.max_drawdown.unwrap_or(0.0) * 100.0
+    );
 }
