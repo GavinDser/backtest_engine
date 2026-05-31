@@ -5,3 +5,4 @@ pub mod metrics;
 pub mod portfolio;
 pub mod signal;
 pub mod strategy;
+pub mod config;
