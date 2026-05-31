@@ -3,6 +3,8 @@ use research_engine::data::{close_prices, load_price_bars};
 use research_engine::indicators::simple_moving_average;
 use research_engine::strategy::generate_sma_signals;
 
+use research_engine::config::BacktestConfig;
+
 #[test]
 fn test_full_pipeline_from_csv_to_metrics() {
     let path = "./data/sample_prices.csv";
@@ -17,7 +19,12 @@ fn test_full_pipeline_from_csv_to_metrics() {
 
     let initial_cash = 10000.0;
 
-    let result = run_backtest_summary(&prices, &signals, initial_cash)
+    let backtest_config = BacktestConfig {
+        initial_cash,
+        commission_rate: 0.004,
+    };
+
+    let result = run_backtest_summary(&prices, &signals, &backtest_config)
         .expect("Backtest result should not be empty");
 
     assert!(!bars.is_empty());

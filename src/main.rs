@@ -1,4 +1,5 @@
 use research_engine::backtest::run_backtest_summary;
+use research_engine::config::BacktestConfig;
 use research_engine::data::{close_prices, load_price_bars};
 use research_engine::indicators::simple_moving_average;
 use research_engine::strategy::generate_sma_signals;
@@ -15,8 +16,14 @@ fn main() {
     let signals = generate_sma_signals(&short_sma, &long_sma).expect("SMA signal generation wrong");
 
     let initial_cash = 10000.0;
+    let commission_rate = 0.001;
 
-    let result = run_backtest_summary(&prices, &signals, initial_cash)
+    let backtest_config = BacktestConfig {
+        initial_cash,
+        commission_rate,
+    };
+
+    let result = run_backtest_summary(&prices, &signals, &backtest_config)
         .expect("Backtest result should not be empty");
 
     println!("Rows loaded: {}", bars.len());

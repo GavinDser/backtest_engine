@@ -4,6 +4,8 @@ use crate::portfolio::Portfolio;
 
 use crate::metrics::{max_drawdown, total_return};
 
+use crate::config::BacktestConfig;
+
 #[derive(Debug, Clone)]
 pub struct BacktestResult {
     pub equity_curve: Vec<f64>,
@@ -16,7 +18,7 @@ pub struct BacktestResult {
 pub fn run_backtest(
     prices: &[f64],
     signals: &[Signal],
-    initial_cash: f64,
+    config: &BacktestConfig,
 ) -> Result<Vec<f64>, BacktestError> {
     if prices.len() != signals.len() {
         return Err(BacktestError::LengthMismatch {
@@ -26,7 +28,7 @@ pub fn run_backtest(
     }
 
     let mut backtest_result: Vec<f64> = Vec::new();
-    let mut portfolio = Portfolio::new(initial_cash);
+    let mut portfolio = Portfolio::new(config.initial_cash);
 
     for i in 0..prices.len() {
         let price = prices[i];
@@ -48,16 +50,16 @@ pub fn run_backtest(
 pub fn run_backtest_summary(
     prices: &[f64],
     signals: &[Signal],
-    initial_cash: f64,
+    config: &BacktestConfig,
 ) -> Result<BacktestResult, BacktestError> {
-    let equity_curve = run_backtest(prices, signals, initial_cash)?;
-    let final_equity = equity_curve.last().copied().unwrap_or(initial_cash);
+    let equity_curve = run_backtest(prices, signals, config)?;
+    let final_equity = equity_curve.last().copied().unwrap_or(config.initial_cash);
     let total_return = total_return(&equity_curve);
     let max_drawdown = max_drawdown(&equity_curve);
 
     Ok(BacktestResult {
         equity_curve,
-        initial_equity: initial_cash,
+        initial_equity: config.initial_cash,
         final_equity,
         total_return,
         max_drawdown,
@@ -81,8 +83,12 @@ mod tests {
     fn test_run_backtest_buy_hold_sell() {
         let prices = vec![10.0, 12.0, 11.0];
         let signals = vec![Signal::Buy, Signal::Hold, Signal::Sell];
+        let backtest_config = BacktestConfig {
+            initial_cash: 1000.0,
+            commission_rate: 0.004,
+        };
 
-        let result = run_backtest(&prices, &signals, 1000.0).unwrap();
+        let result = run_backtest(&prices, &signals, &backtest_config).unwrap();
 
         assert_eq!(result.len(), 3);
         assert_close(result[0], 1000.0);
@@ -94,8 +100,12 @@ mod tests {
     fn test_run_backtest_length_mismatch() {
         let prices = vec![10.0, 12.0];
         let signals = vec![Signal::Buy];
+        let backtest_config = BacktestConfig {
+            initial_cash: 1000.0,
+            commission_rate: 0.004,
+        };
 
-        let result = run_backtest(&prices, &signals, 1000.0);
+        let result = run_backtest(&prices, &signals, &backtest_config);
 
         assert_eq!(
             result,
@@ -110,9 +120,12 @@ mod tests {
     fn test_run_backtest_summary() {
         let prices = [10.0, 12.0, 11.0];
         let signals = [Signal::Buy, Signal::Hold, Signal::Sell];
-        let initial_cash = 1000.0;
+        let backtest_config = BacktestConfig {
+            initial_cash: 1000.0,
+            commission_rate: 0.004,
+        };
 
-        let result = run_backtest_summary(&prices, &signals, initial_cash).unwrap();
+        let result = run_backtest_summary(&prices, &signals, &backtest_config).unwrap();
 
         assert_eq!(result.equity_curve.len(), 3);
         assert_close(result.final_equity, 1100.0);
